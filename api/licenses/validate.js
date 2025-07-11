@@ -9,7 +9,7 @@ const JWT_SECRET = process.env.JWT_SECRET || 'clave-super-secreta-para-produccio
 const validLicenses = {
   // Licencias Permanentes
   'TALLERPRO-VALIDA-1234-5678': { type: 'PRO_LIFETIME' },
-  
+  'TALLERPRO-VALIDA-8604-6182': { type: 'PRO_LIFETIME' },
   // Licencias Anuales
   'TALLERPRO-ANUAL-ABCD-EFGH': { type: 'PRO_YEARLY' },
 
