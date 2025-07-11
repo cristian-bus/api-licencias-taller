@@ -15,6 +15,7 @@ const validLicenses = {
 
   // Licencias de Prueba (Trials)
   'TRIAL-7-DIAS-EJEMPLO-123': { type: 'TRIAL_7_DAYS' },
+  'TRIAL-7-DIAS-EJEMPLO-567': { type: 'TRIAL_7_DAYS' },
   'TRIAL-30-DIAS-EJEMPLO-456': { type: 'TRIAL_30_DAYS' },
 };
 
