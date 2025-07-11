@@ -6,6 +6,7 @@ const JWT_SECRET = process.env.JWT_SECRET || 'clave-super-secreta-para-produccio
 const validLicenses = {
   'TALLERPRO-VALIDA-1234-5678': { used: false, domain: null, type: 'PRO_LIFETIME' },
   'TALLERPRO-ANUAL-ABCD-EFGH': { used: false, domain: null, type: 'PRO_YEARLY' },
+'TALLERPRO-AB7G4-K9P2R-1S8T3': { used: false, domain: null, type: 'PRO_YEARLY' },
 };
 
 module.exports = (req, res) => {
