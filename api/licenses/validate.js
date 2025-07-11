@@ -1,5 +1,5 @@
 function validateLicense(licenseKey) {
-    const validKey = "TALLERPRO-7DIAS-HPZJ-EDAI";
+    const validKey = "TALLERPRO-7DIAS-P2JV-0YKI";
     if (licenseKey.trim().toUpperCase() === validKey) {
         // La clave es correcta, ahora vemos la expiración
         const type = "7DIAS";
