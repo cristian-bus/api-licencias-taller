@@ -9,6 +9,7 @@ const VALID_LICENSES = {
   'TALLERPRO-ANUAL-ABCD-EFGH': { type: 'ANUAL' },
   'TALLERPRO-MENSUAL-1234-5678': { type: 'MENSUAL' },
   'TALLERPRO-ANUAL-JUAN-PEREZ': { type: 'ANUAL' },
+  'TALLERPRO-ANUAL-JUAN-CHO': { type: 'ANUAL' },
   // Agrega nuevas licencias aquí, recordando la coma al final de cada línea (excepto la última).
 };
 
