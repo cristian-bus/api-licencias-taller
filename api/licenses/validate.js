@@ -1,7 +1,5 @@
 // --- CÓDIGO DE DEPURACIÓN AVANZADA ---
-// Propósito: Forzar una conexión manual y registrar más detalles para encontrar el problema.
-
-import { Redis } from '@upstash/redis';
+// Propósito: Mostrar las variables de entorno que Vercel está leyendo.
 
 export default async function handler(req, res) {
   // --- Bloque para manejar CORS ---
@@ -16,43 +14,26 @@ export default async function handler(req, res) {
 
   const url = process.env.UPSTASH_REDIS_REST_URL;
   const token = process.env.UPSTASH_REDIS_REST_TOKEN;
+  const jwtSecret = process.env.JWT_SECRET;
 
-  // 1. Verificación explícita de las variables de entorno
-  if (!url || !token) {
-    console.error('ERROR DE CONFIGURACIÓN: UPSTASH_REDIS_REST_URL o UPSTASH_REDIS_REST_TOKEN no están definidas en Vercel.');
-    return res.status(500).json({ 
-        message: 'Error de Configuración del Servidor. Una o más variables de Upstash no fueron encontradas.' 
-    });
+  const responsePayload = {
+    message: 'Resultado de la verificación de variables de entorno:',
+    variables: {
+      UPSTASH_REDIS_REST_URL_exists: !!url,
+      UPSTASH_REDIS_REST_URL_value: `Inicia con: ${url ? url.substring(0, 20) : 'N/A'}...`,
+      UPSTASH_REDIS_REST_TOKEN_exists: !!token,
+      UPSTASH_REDIS_REST_TOKEN_value: `Inicia con: ${token ? token.substring(0, 8) : 'N/A'}...`,
+      JWT_SECRET_exists: !!jwtSecret,
+      JWT_SECRET_value: `Inicia con: ${jwtSecret ? jwtSecret.substring(0, 5) : 'N/A'}...`,
+    }
+  };
+
+  // Si alguna variable falta, lo indicamos en la consola del servidor para un registro más claro.
+  if (!url || !token || !jwtSecret) {
+    console.error("Una o más variables de entorno no fueron encontradas:", responsePayload.variables);
+    return res.status(500).json(responsePayload);
   }
 
-  // 2. Log de diagnóstico (seguro, no expone las claves completas)
-  console.log(`Intentando conectar a Upstash...`);
-  console.log(`URL leída (primeros 15 caracteres): ${url.substring(0, 15)}...`);
-  console.log(`Token leído (primeros 5 caracteres): ${token.substring(0, 5)}...`);
-
-  try {
-    // 3. Conexión manual y explícita en lugar de Redis.fromEnv()
-    const redis = new Redis({
-      url: url,
-      token: token,
-    });
-
-    // 4. Enviamos el comando PING para probar la conexión
-    const response = await redis.ping();
-
-    // Si el PING es exitoso, la conexión funciona.
-    return res.status(200).json({ 
-        success: true, 
-        message: `¡Conexión con Upstash exitosa! Respuesta del servidor: ${response}.`
-    });
-
-  } catch (error) {
-    // Si el PING falla, las credenciales son incorrectas o hay un problema de red.
-    console.error('ERROR DEFINITIVO DE CONEXIÓN A UPSTASH:', error);
-    return res.status(500).json({ 
-        message: 'Fallo la conexión con la base de datos. El servidor no pudo autenticarse con Upstash usando las credenciales provistas.',
-        errorName: error.name,
-        errorMessage: error.message 
-    });
-  }
+  // Si todas existen, devolvemos la información para confirmación visual.
+  return res.status(200).json(responsePayload);
 }
