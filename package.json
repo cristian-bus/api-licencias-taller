@@ -9,7 +9,7 @@
   "author": "Cristian",
   "license": "ISC",
   "dependencies": {
+    "@upstash/redis": "^1.35.1",
     "jsonwebtoken": "^9.0.2"
   }
 }
-
