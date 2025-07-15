@@ -1,17 +1,7 @@
-// Importamos las herramientas de Upstash Redis y JWT
+// --- CÓDIGO DE DEPURACIÓN FINAL ---
+// Propósito: Probar exclusivamente la conexión con la base de datos de Upstash.
+
 import { Redis } from '@upstash/redis';
-import jwt from 'jsonwebtoken';
-
-// Configura el cliente de Redis. Leerá las variables de entorno automáticamente.
-const redis = Redis.fromEnv();
-
-// Lista de licencias válidas. En un caso real, esto también podría venir de una base de datos.
-const VALID_LICENSES = {
-  'TALLERPRO-ANUAL-ABCD-EFGH': { type: 'ANUAL' },
-  'TALLERPRO-MENSUAL-1234-5678': { type: 'MENSUAL' },
-  'TALLERPRO-ANUAL-JUAN-PEREZ': { type: 'ANUAL' }, // <-- Licencia nueva
-  // Puedes agregar más licencias aquí
-};
 
 export default async function handler(req, res) {
   // --- Bloque para manejar CORS ---
@@ -19,57 +9,36 @@ export default async function handler(req, res) {
   res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
   res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization');
 
-  // Responder a la petición de sondeo del navegador
   if (req.method === 'OPTIONS') {
     return res.status(204).end();
   }
   // --- Fin del bloque CORS ---
 
-  // Solo permitir peticiones POST
-  if (req.method !== 'POST') {
-    return res.status(405).json({ message: 'Method Not Allowed' });
-  }
-
-  const { licenseKey, uuid } = req.body;
-
-  if (!licenseKey || !uuid) {
-    return res.status(400).json({ message: 'Faltan la clave de licencia o el ID del dispositivo.' });
-  }
-
-  if (!VALID_LICENSES[licenseKey]) {
-    return res.status(404).json({ message: 'La clave de licencia no es válida.' });
+  // Verificamos que las variables de entorno existan para dar un error más claro si faltan.
+  if (!process.env.UPSTASH_REDIS_REST_URL || !process.env.UPSTASH_REDIS_REST_TOKEN) {
+    console.error('ERROR DE CONFIGURACIÓN: Una o ambas variables de Upstash no están definidas en Vercel.');
+    return res.status(500).json({ 
+        message: 'Error de Configuración del Servidor. Revisa que UPSTASH_REDIS_REST_URL y UPSTASH_REDIS_REST_TOKEN existan en las Environment Variables de tu proyecto en Vercel.' 
+    });
   }
 
   try {
-    const assignedUuid = await redis.get(licenseKey);
+    // Intentamos crear el cliente y enviar un comando PING.
+    const redis = Redis.fromEnv();
+    const response = await redis.ping();
 
-    if (!assignedUuid) {
-      // Primera activación: Guardamos el UUID
-      await redis.set(licenseKey, uuid);
-      console.log(`Licencia ${licenseKey} activada por primera vez en el dispositivo ${uuid}.`);
-    } else if (assignedUuid !== uuid) {
-      // La licencia ya está asignada a otro dispositivo
-      console.warn(`Intento de activación de la licencia ${licenseKey} en un nuevo dispositivo (${uuid}), pero ya está asignada a ${assignedUuid}.`);
-      return res.status(409).json({ message: 'La licencia ya está en uso en otro dispositivo.' });
-    }
-    
-    // Si llegamos aquí, la licencia es válida para este dispositivo.
-    const licenseDetails = VALID_LICENSES[licenseKey];
-    const expiration = licenseDetails.type === 'ANUAL' ? '365d' : '30d';
-    const token = jwt.sign(
-      { 
-        licenseKey: licenseKey,
-        type: licenseDetails.type,
-        uuid: uuid
-      },
-      process.env.JWT_SECRET,
-      { expiresIn: expiration }
-    );
-
-    return res.status(200).json({ message: 'Licencia validada con éxito.', token });
+    // Si el PING es exitoso, la conexión funciona.
+    return res.status(200).json({ 
+        success: true, 
+        message: `¡Conexión con Upstash exitosa! Respuesta del servidor: ${response}. Ahora puedes restaurar el código final de validate.js.`
+    });
 
   } catch (error) {
-    console.error('Error en la validación de la licencia con Upstash:', error);
-    return res.status(500).json({ message: 'Error interno del servidor durante la validación.' });
+    // Si el PING falla, significa que las credenciales son incorrectas.
+    console.error('ERROR DE CONEXIÓN A UPSTASH:', error);
+    return res.status(500).json({ 
+        message: 'Fallo la conexión con la base de datos. Por favor, verifica que los valores de UPSTASH_REDIS_REST_URL y UPSTASH_REDIS_REST_TOKEN en Vercel sean correctos y vuelve a desplegar.',
+        error: error.message 
+    });
   }
 }
