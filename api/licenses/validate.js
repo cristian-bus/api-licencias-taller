@@ -6,6 +6,10 @@ import jwt from 'jsonwebtoken';
 const VALID_LICENSES = {
   'TALLERPRO-ANUAL-ABCD-EFGH': { type: 'ANUAL' },
   'TALLERPRO-MENSUAL-1234-5678': { type: 'MENSUAL' },
+<<<<<<< HEAD
+=======
+  'TALLERPRO-MENSUAL-1234-ABCR': { type: 'MENSUAL' },
+>>>>>>> b76769a0298d8be22c5eb0c7724afbcf60240068
 };
 
 export default async function handler(req, res) {
