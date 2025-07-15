@@ -1,5 +1,16 @@
-// --- CÓDIGO DE DEPURACIÓN AVANZADA ---
-// Propósito: Mostrar las variables de entorno que Vercel está leyendo.
+// --- CÓDIGO FINAL Y FUNCIONAL ---
+// Propósito: Validar licencias, asignar un dispositivo por licencia y generar un token de sesión.
+
+import { Redis } from '@upstash/redis';
+import jwt from 'jsonwebtoken';
+
+// Lista de licencias válidas que tu sistema reconocerá.
+const VALID_LICENSES = {
+  'TALLERPRO-ANUAL-ABCD-EFGH': { type: 'ANUAL' },
+  'TALLERPRO-MENSUAL-1234-5678': { type: 'MENSUAL' },
+  'TALLERPRO-ANUAL-JUAN-PEREZ': { type: 'ANUAL' },
+  // Agrega nuevas licencias aquí, recordando la coma al final de cada línea (excepto la última).
+};
 
 export default async function handler(req, res) {
   // --- Bloque para manejar CORS ---
@@ -12,30 +23,67 @@ export default async function handler(req, res) {
   }
   // --- Fin del bloque CORS ---
 
+  if (req.method !== 'POST') {
+    return res.status(405).json({ message: 'Method Not Allowed' });
+  }
+
+  const { licenseKey, uuid } = req.body;
+
+  if (!licenseKey || !uuid) {
+    return res.status(400).json({ message: 'Faltan la clave de licencia o el ID del dispositivo.' });
+  }
+
+  if (!VALID_LICENSES[licenseKey]) {
+    return res.status(404).json({ message: 'La clave de licencia no es válida.' });
+  }
+
+  // Verificamos que las variables de entorno existan antes de usarlas.
   const url = process.env.UPSTASH_REDIS_REST_URL;
   const token = process.env.UPSTASH_REDIS_REST_TOKEN;
   const jwtSecret = process.env.JWT_SECRET;
 
-  const responsePayload = {
-    message: 'Resultado de la verificación de variables de entorno:',
-    variables: {
-      UPSTASH_REDIS_REST_URL_exists: !!url,
-      UPSTASH_REDIS_REST_URL_value: `Inicia con: ${url ? url.substring(0, 20) : 'N/A'}...`,
-      UPSTASH_REDIS_REST_TOKEN_exists: !!token,
-      UPSTASH_REDIS_REST_TOKEN_value: `Inicia con: ${token ? token.substring(0, 8) : 'N/A'}...`,
-      JWT_SECRET_exists: !!jwtSecret,
-      JWT_SECRET_value: `Inicia con: ${jwtSecret ? jwtSecret.substring(0, 5) : 'N/A'}...`,
-    }
-  };
-
-  // Si alguna variable falta, lo indicamos en la consola del servidor para un registro más claro.
   if (!url || !token || !jwtSecret) {
-    console.error("Una o más variables de entorno no fueron encontradas:", responsePayload.variables);
-    return res.status(500).json(responsePayload);
+      console.error('ERROR DE CONFIGURACIÓN: Faltan una o más variables de entorno en Vercel.');
+      return res.status(500).json({ message: 'Error de configuración del servidor.' });
   }
 
-  // Si todas existen, devolvemos la información para confirmación visual.
-  return res.status(200).json(responsePayload);
-}
+  try {
+    // Usamos el método de conexión explícito para máxima fiabilidad.
+    const redis = new Redis({
+      url: url,
+      token: token,
+    });
 
+    const assignedUuid = await redis.get(licenseKey);
+
+    if (!assignedUuid) {
+      // Primera activación: Guardamos el UUID del dispositivo.
+      await redis.set(licenseKey, uuid);
+      console.log(`Licencia ${licenseKey} activada por primera vez en el dispositivo ${uuid}.`);
+    } else if (assignedUuid !== uuid) {
+      // La licencia ya está asignada a otro dispositivo.
+      console.warn(`Intento de activación de la licencia ${licenseKey} en un nuevo dispositivo (${uuid}), pero ya está asignada a ${assignedUuid}.`);
+      return res.status(409).json({ message: 'La licencia ya está en uso en otro dispositivo.' });
+    }
+    
+    // Si llegamos aquí, la licencia es válida para este dispositivo.
+    const licenseDetails = VALID_LICENSES[licenseKey];
+    const expiration = licenseDetails.type === 'ANUAL' ? '365d' : '30d';
+    const sessionToken = jwt.sign(
+      { 
+        licenseKey: licenseKey,
+        type: licenseDetails.type,
+        uuid: uuid
+      },
+      jwtSecret,
+      { expiresIn: expiration }
+    );
+
+    return res.status(200).json({ message: 'Licencia validada con éxito.', token: sessionToken });
+
+  } catch (error) {
+    console.error('Error durante la validación de la licencia con Upstash:', error);
+    return res.status(500).json({ message: 'Error interno del servidor durante la validación.' });
+  }
+}
 
