@@ -9,6 +9,7 @@ const redis = Redis.fromEnv();
 const VALID_LICENSES = {
   'TALLERPRO-ANUAL-ABCD-EFGH': { type: 'ANUAL' },
   'TALLERPRO-MENSUAL-1234-5678': { type: 'MENSUAL' },
+  'TALLERPRO-ANUAL-JUAN-PEREZ': { type: 'ANUAL' }, // <-- Licencia nueva
   // Puedes agregar más licencias aquí
 };
 
