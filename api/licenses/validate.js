@@ -9,6 +9,7 @@ const redis = Redis.fromEnv();
 const VALID_LICENSES = {
   'TALLERPRO-ANUAL-ABCD-EFGH': { type: 'ANUAL' },
   'TALLERPRO-MENSUAL-1234-5678': { type: 'MENSUAL' },
+  'TALLERPRO-MENSUAL-1234-ABCR': { type: 'MENSUAL' },
 };
 
 export default async function handler(req, res) {
