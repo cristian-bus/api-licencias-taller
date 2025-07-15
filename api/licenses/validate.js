@@ -9,49 +9,50 @@ const redis = Redis.fromEnv();
 const VALID_LICENSES = {
   'TALLERPRO-ANUAL-ABCD-EFGH': { type: 'ANUAL' },
   'TALLERPRO-MENSUAL-1234-5678': { type: 'MENSUAL' },
-  'TALLERPRO-MENSUAL-1234-ABCD': { type: 'MENSUAL' },
-  // Puedes agregar más licencias aquí
 };
 
 export default async function handler(req, res) {
-  // Solo permitir peticiones POST
+  // --- INICIO: Bloque para manejar CORS ---
+  // Permite que cualquier dominio acceda a esta API. Para mayor seguridad,
+  // puedes reemplazar '*' con el dominio de tu aplicación cuando la despliegues.
+  res.setHeader('Access-Control-Allow-Origin', '*');
+  res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
+  res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization');
+
+  // Si la petición es de tipo OPTIONS (el sondeo del navegador),
+  // respondemos que todo está OK y terminamos la ejecución.
+  if (req.method === 'OPTIONS') {
+    return res.status(204).end();
+  }
+  // --- FIN: Bloque para manejar CORS ---
+
+  // Ahora, continuamos con la lógica original solo para peticiones POST
   if (req.method !== 'POST') {
     return res.status(405).json({ message: 'Method Not Allowed' });
   }
 
   const { licenseKey, uuid } = req.body;
 
-  // Validaciones básicas de la entrada
   if (!licenseKey || !uuid) {
     return res.status(400).json({ message: 'Faltan la clave de licencia o el ID del dispositivo.' });
   }
 
-  // 1. Verificar si la clave de licencia es válida en nuestra lista
   if (!VALID_LICENSES[licenseKey]) {
     return res.status(404).json({ message: 'La clave de licencia no es válida.' });
   }
 
   try {
-    // 2. Consultar en Upstash si la licencia ya tiene un dispositivo asignado
     const assignedUuid = await redis.get(licenseKey);
 
-    // 3. Lógica de asignación de dispositivo
-    // Caso A: La licencia no tiene ningún dispositivo asignado
     if (!assignedUuid) {
-      // "Casamos" la licencia con el UUID del dispositivo actual.
-      await redis.set(licenseKey, uuid);
-      
+      const expirationInSeconds = VALID_LICENSES[licenseKey].type === 'ANUAL' ? 31536000 : 2592000;
+      await redis.set(licenseKey, uuid, { ex: expirationInSeconds });
       console.log(`Licencia ${licenseKey} activada por primera vez en el dispositivo ${uuid}.`);
-
-    // Caso B: La licencia ya tiene un UUID asignado. Verificamos si coincide.
     } else if (assignedUuid !== uuid) {
-      // Si el UUID de la base de datos NO coincide con el que intenta activar, rechazamos.
       console.warn(`Intento de activación de la licencia ${licenseKey} en un nuevo dispositivo (${uuid}), pero ya está asignada a ${assignedUuid}.`);
       return res.status(409).json({ message: 'La licencia ya está en uso en otro dispositivo.' });
     }
     
-    // Si llegamos aquí, es porque la licencia es válida y el UUID coincide (o era la primera activación).
-    // Procedemos a crear el token de sesión.
     const licenseDetails = VALID_LICENSES[licenseKey];
     const expiration = licenseDetails.type === 'ANUAL' ? '365d' : '30d';
     const token = jwt.sign(
@@ -60,7 +61,7 @@ export default async function handler(req, res) {
         type: licenseDetails.type,
         uuid: uuid
       },
-      process.env.JWT_SECRET, // ¡IMPORTANTE! Debes configurar esta variable en Vercel
+      process.env.JWT_SECRET,
       { expiresIn: expiration }
     );
 
