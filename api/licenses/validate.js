@@ -10,7 +10,11 @@ const VALID_LICENSES = {
   'TALLERPRO-MENSUAL-1234-5678': { type: 'MENSUAL' },
   'TALLERPRO-ANUAL-JUAN-PEREZ': { type: 'ANUAL' },
   'TALLERPRO-ANUAL-JUAN-CHO': { type: 'ANUAL' },
-  // Agrega nuevas licencias aquí, recordando la coma al final de cada línea (excepto la última).
+  // --- INICIO: NUEVA LICENCIA DE PRUEBA ---
+  // Agregamos una nueva clave de licencia con el tipo 'PRUEBA'.
+  // Puedes cambiar 'PRUEBA-7DIAS-GRATIS' por la clave que prefieras.
+  'TALLERPRO-PRUEBA-7DIAS-GRATIS': { type: 'PRUEBA' },
+  // --- FIN: NUEVA LICENCIA DE PRUEBA ---
 };
 
 export default async function handler(req, res) {
@@ -69,7 +73,26 @@ export default async function handler(req, res) {
     
     // Si llegamos aquí, la licencia es válida para este dispositivo.
     const licenseDetails = VALID_LICENSES[licenseKey];
-    const expiration = licenseDetails.type === 'ANUAL' ? '365d' : '30d';
+    
+    // --- INICIO: LÓGICA DE EXPIRACIÓN MEJORADA ---
+    // Ahora, la duración depende del tipo de licencia.
+    let expiration;
+    switch (licenseDetails.type) {
+        case 'ANUAL':
+            expiration = '365d';
+            break;
+        case 'MENSUAL':
+            expiration = '30d';
+            break;
+        case 'PRUEBA':
+            expiration = '7d'; // ¡Aquí definimos la duración de 7 días!
+            break;
+        default:
+            // Por seguridad, si el tipo no se reconoce, no se activa.
+            return res.status(400).json({ message: 'Tipo de licencia desconocido.' });
+    }
+    // --- FIN: LÓGICA DE EXPIRACIÓN MEJORADA ---
+
     const sessionToken = jwt.sign(
       { 
         licenseKey: licenseKey,
@@ -87,4 +110,3 @@ export default async function handler(req, res) {
     return res.status(500).json({ message: 'Error interno del servidor durante la validación.' });
   }
 }
-
