@@ -8,6 +8,7 @@ import jwt from 'jsonwebtoken';
 const VALID_LICENSES = {
   'TALLERPRO-ANUAL-ABCD-EFGH': { type: 'ANUAL' },
   'TALLERPRO-MENSUAL-1234-5678': { type: 'MENSUAL' },
+  'TALLERPRO-GUSTAVO-RAJOY-2107': { type: 'MENSUAL' },
   'TALLERPRO-ANUAL-JUAN-PEREZ': { type: 'ANUAL' },
   'TALLERPRO-ANUAL-JUAN-CHO': { type: 'ANUAL' },
   // --- INICIO: NUEVA LICENCIA DE PRUEBA ---
