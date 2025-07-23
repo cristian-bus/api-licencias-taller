@@ -7,6 +7,7 @@ import jwt from 'jsonwebtoken';
 // Lista de licencias válidas que tu sistema reconocerá.
 const VALID_LICENSES = {
   'TALLERPRO-ANUAL-ABCD-EFGH': { type: 'ANUAL' },
+  'TALLERPRO-ANUAL-ABCD-1212': { type: 'PRUEBA' },
   'TALLERPRO-MENSUAL-1234-5678': { type: 'MENSUAL' },
   'TALLERPRO-GUSTAVO-RAJOY-2107': { type: 'MENSUAL' },
   'TALLERPRO-GUSTAVO-LEUIZAMON-2207': { type: 'MENSUAL' },
