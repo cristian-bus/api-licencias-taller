@@ -18,6 +18,7 @@ const VALID_LICENSES = {
   // Agregamos una nueva clave de licencia con el tipo 'PRUEBA'.
   // Puedes cambiar 'PRUEBA-7DIAS-GRATIS' por la clave que prefieras.
   'TALLERPRO-PRUEBA-7DIAS-GRATIS': { type: 'PRUEBA' },
+  'TALLERPRO-PRUEBA-7DIAS-GRAT11': { type: 'PRUEBA' },
   // --- FIN: NUEVA LICENCIA DE PRUEBA ---
 };
 
